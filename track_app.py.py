@@ -1,6 +1,8 @@
 from dash import Dash, html, dcc, Input, Output, State
 from datetime import date, datetime
 from dash.exceptions import PreventUpdate
+from database_service import MongoDBServices
+from constants import Constants
 
 # initialise the application
 app = Dash()
@@ -8,6 +10,11 @@ app = Dash()
 # creating a dictionary to store the tasks
 # this will be replaced by db call
 task_dict = {}
+doc_list_initial = []
+
+mongo_service_obj = MongoDBServices()
+in_prog_tasks = mongo_service_obj.load_documents(Constants.IN_PROGRESS_TASK_COLLECTION,{})
+doc_list_initial = list(in_prog_tasks)
 
 # build the layout
 app.layout = html.Div([
@@ -44,8 +51,13 @@ app.layout = html.Div([
 			
 			html.Div([
 						html.Pre("Task Count:"),
-						html.Div([html.H1(id="update-task-count", children=len(task_dict))])
+						# html.Div([html.H1(id="update-task-count", children=len(task_dict))])
+						html.Div([html.H1(id="update-task-count", children=len(doc_list_initial))])
 							], style = {"textAlign": "center"})
+
+						#todo: Adding 2 counts featuring-
+						# 1.total tasks(in progress + completed)
+						# 2.only in progress task count
 
 	])
 
@@ -71,10 +83,26 @@ def submit_task(n_clicks, task_category, sub_category, task_date, task_descripti
 		raise PreventUpdate
 
 	if task_description and task_description != None:
-		task_dict[datetime.now().strftime("%Y%m%d%H%M%S")] = {"category": task_category, "sub_category": sub_category, "task_date": task_date, "task_description": task_description}
-		return "Task added successfully", True, "", len(task_dict)
+		# task_dict[datetime.now().strftime("%Y%m%d%H%M%S")] = {"category": task_category, "sub_category": sub_category, "task_date": task_date, "task_description": task_description}
+		task_dict= {
+			"_id": datetime.now().strftime("%Y%m%d%H%M%S"),
+			"category": task_category,
+			"sub_category": sub_category,
+			"task_date": task_date,
+			"task_description": task_description
+		}
+		mongo_service_obj.insert_document(Constants.IN_PROGRESS_TASK_COLLECTION, task_dict)
+
+
+		# return "Task added successfully", True, "", len(task_dict)
+		return "Task added successfully", True, "", len(doc_list_initial) + 1
 	else:
-		return "Just write something about the task so that you can remember later!", True, "", len(task_dict)
+		#load_documents added here for the situation when in a single session if the flow comes to else part
+		# after executing the if part
+		updated_in_prog_tasks = mongo_service_obj.load_documents(Constants.IN_PROGRESS_TASK_COLLECTION, {})
+		updated_doc_list = list(updated_in_prog_tasks)
+		# return "Just write something about the task so that you can remember later!", True, "", len(task_dict)
+		return "Just write something about the task so that you can remember later!", True, "", len(updated_doc_list)
 
 if __name__ == '__main__':
 	# start the application server
