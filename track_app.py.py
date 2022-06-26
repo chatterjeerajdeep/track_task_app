@@ -93,9 +93,11 @@ def submit_task(n_clicks, task_category, sub_category, task_date, task_descripti
 		}
 		mongo_service_obj.insert_document(Constants.IN_PROGRESS_TASK_COLLECTION, task_dict)
 
+		updated_in_prog_tasks = mongo_service_obj.load_documents(Constants.IN_PROGRESS_TASK_COLLECTION, {})
+		updated_doc_list = list(updated_in_prog_tasks)
 
 		# return "Task added successfully", True, "", len(task_dict)
-		return "Task added successfully", True, "", len(doc_list_initial) + 1
+		return "Task added successfully", True, "", len(updated_doc_list)
 	else:
 		#load_documents added here for the situation when in a single session if the flow comes to else part
 		# after executing the if part
