@@ -7,17 +7,12 @@ from constants import Constants
 # initialise the application
 app = Dash()
 
-# creating a dictionary to store the tasks
-# this will be replaced by db call
-task_dict = {}
-doc_list_initial = []
-
+# initialise the db connection
 mongo_service_obj = MongoDBServices()
-in_prog_tasks = mongo_service_obj.load_documents(Constants.IN_PROGRESS_TASK_COLLECTION,{})
-doc_list_initial = list(in_prog_tasks)
 
 # build the layout
-app.layout = html.Div([
+def page_layout():
+	return html.Div([
 			dcc.ConfirmDialog(id='display-message'),
 			html.H2("Experimental Work Track App", style={"textAlign": "center"}),
 			html.Div([
@@ -52,7 +47,7 @@ app.layout = html.Div([
 			html.Div([
 						html.Pre("Task Count:"),
 						# html.Div([html.H1(id="update-task-count", children=len(task_dict))])
-						html.Div([html.H1(id="update-task-count", children=len(doc_list_initial))])
+						html.Div([html.H1(id="update-task-count", children=len(list(mongo_service_obj.load_documents(Constants.IN_PROGRESS_TASK_COLLECTION,{}))) )])
 							], style = {"textAlign": "center"})
 
 						#todo: Adding 2 counts featuring-
@@ -60,6 +55,9 @@ app.layout = html.Div([
 						# 2.only in progress task count
 
 	])
+
+# this will reload and update the changes in layout for every page refresh
+app.layout = page_layout
 
 # function to dynamically populate the dropdown
 @app.callback(Output(component_id="sub-category", component_property="options"), [Input(component_id="work-category", component_property="value")])
@@ -94,17 +92,17 @@ def submit_task(n_clicks, task_category, sub_category, task_date, task_descripti
 		mongo_service_obj.insert_document(Constants.IN_PROGRESS_TASK_COLLECTION, task_dict)
 
 		updated_in_prog_tasks = mongo_service_obj.load_documents(Constants.IN_PROGRESS_TASK_COLLECTION, {})
-		updated_doc_list = list(updated_in_prog_tasks)
+		doc_list = list(updated_in_prog_tasks)
 
 		# return "Task added successfully", True, "", len(task_dict)
-		return "Task added successfully", True, "", len(updated_doc_list)
+		return "Task added successfully", True, "", len(doc_list)
 	else:
 		#load_documents added here for the situation when in a single session if the flow comes to else part
 		# after executing the if part
 		updated_in_prog_tasks = mongo_service_obj.load_documents(Constants.IN_PROGRESS_TASK_COLLECTION, {})
-		updated_doc_list = list(updated_in_prog_tasks)
-		# return "Just write something about the task so that you can remember later!", True, "", len(task_dict)
-		return "Just write something about the task so that you can remember later!", True, "", len(updated_doc_list)
+		doc_list = list(updated_in_prog_tasks)
+
+		return "Just write something about the task so that you can remember later!", True, "", len(doc_list)
 
 if __name__ == '__main__':
 	# start the application server
