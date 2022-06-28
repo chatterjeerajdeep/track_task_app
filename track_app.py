@@ -5,7 +5,8 @@ from database_service import MongoDBServices
 from constants import Constants
 
 # initialise the application
-app = Dash()
+app = Dash(__name__)
+server = app.server
 
 # initialise the db connection
 mongo_service_obj = MongoDBServices()
